@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Details</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --line: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #1d4ed8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at top, #e5edff 0%, var(--bg) 45%);
+      color: var(--text);
+      padding: 24px;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    h1 { margin: 0; font-size: 24px; }
+    .back { color: var(--accent); text-decoration: none; font-weight: 600; }
+    .summary {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      background: #f8fafc;
+      color: #334155;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    tr:last-child td { border-bottom: none; }
+    .avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid #cbd5e1;
+      background: #e2e8f0;
+    }
+    .placeholder {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      color: #1e40af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      border: 1px solid #93c5fd;
+    }
+    .chip {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .empty {
+      background: var(--card);
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+    @media (max-width: 760px) {
+      th:nth-child(4), td:nth-child(4) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h1>Student Details</h1>
+      <a class="back" href="{{ url_for('home') }}">Back to Dashboard</a>
+    </div>
+
+    <div class="summary">Total Students: {{ students|length }}</div>
+
+    {% if students %}
+      <div class="panel">
+        <table>
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Class</th>
+              <th>Profile Image Path</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in students %}
+              <tr>
+                <td>
+                  {% if s.image %}
+                    <img class="avatar" src="{{ s.image }}" alt="{{ s.name }}" />
+                  {% else %}
+                    <div class="placeholder">{{ (s.name[:1] if s.name else 'S')|upper }}</div>
+                  {% endif %}
+                </td>
+                <td><span class="chip">{{ s.id }}</span></td>
+                <td>{{ s.name or '--' }}</td>
+                <td>{{ s.student_class or '--' }}</td>
+                <td>{{ s.image or '--' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">No students found. Train a student first.</div>
+    {% endif %}
+  </div>
+</body>
+</html>

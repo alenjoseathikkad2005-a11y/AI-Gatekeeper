@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Train Students</title>
+
+<style>
+/* Camera locked initially */
+#cameraSection {
+  opacity: 0;
+  transform: translateY(-60px);
+  pointer-events: none;
+}
+
+/* Camera unlocked */
+#cameraSection.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+/* ================= THEME ================= */
+:root {
+  --bg: #05070d;
+  --card: #0d121c;
+  --border: rgba(148,163,184,0.18);
+
+  --green: #22c55e;
+  --green-soft: rgba(34,197,94,0.25);
+
+  --blue: #38bdf8;
+  --blue-soft: rgba(56,189,248,0.25);
+
+  --text-main: #f9fafb;
+  --text-muted: #cbd5e1;
+}
+
+/* ================= RESET ================= */
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+/* ================= PAGE CENTER ================= */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(56,189,248,0.22), transparent 40%),
+    radial-gradient(circle at bottom right, rgba(34,197,94,0.22), transparent 45%),
+    linear-gradient(180deg, #05070d, #020617);
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px;
+}
+
+/* ================= CARD ================= */
+.card {
+  width: 100%;
+  max-width: 520px;
+  margin: 40px auto;
+  padding: 28px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #0d121c, #020617);
+  border: 1px solid var(--border);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ================= HEADINGS ================= */
+h2 {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin: 0;
+}
+
+/* ================= INPUTS ================= */
+input {
+  width: 100%;
+  background: #020617;
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+/* ================= BUTTONS ================= */
+button {
+  width: 100%;
+  background: linear-gradient(135deg, var(--green), #16a34a);
+  color: #022c22;
+  font-weight: 700;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  cursor: pointer;
+}
+
+/* ================= CAMERA FRAME ================= */
+.camera-box {
+  width: 100%;
+  height: 320px;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.25);
+  background:
+    radial-gradient(circle at top left, rgba(56,189,248,0.15), transparent 40%),
+    linear-gradient(180deg, #0b1220, #020617);
+}
+
+/* CAMERA IMAGE */
+#trainCamera {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+/* PLACEHOLDER */
+.camera-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(203,213,225,0.8);
+  letter-spacing: 0.12em;
+}
+
+/* CAMERA ACTIONS */
+.camera-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.camera-actions button {
+  flex: 1;
+  font-size: 0.8rem;
+}
+
+/* STATUS */
+#cameraInfo {
+  text-align: center;
+  color: var(--green);
+  font-size: 0.9rem;
+}
+</style>
+</head>
+
+<body>
+
+<!-- CARD 1 -->
+<div class="card">
+  <h2>TRAIN NEW STUDENT</h2>
+  <input
+  id="student-name"
+  placeholder="STUDENT NAME"
+  style="text-transform: uppercase;"
+  oninput="
+    this.value = this.value.toUpperCase().replace(/[^A-Z ]/g, '');"/>
+
+  <input
+  id="student-id"
+  placeholder="STUDENT ID"
+  inputmode="numeric"
+  maxlength="10"
+  oninput="
+    this.value = this.value.replace(/[^0-9]/g, '');"/>
+
+  <button onclick="startTraining()">Start Training</button>
+</div>
+
+<!-- CARD 2 -->
+<div class="card" id="cameraSection">
+  <h2>TRAINING CAMERA</h2>
+
+  <div class="camera-box">
+    <div class="camera-placeholder" id="cameraPlaceholder">
+      Camera is off
+    </div>
+    <img id="trainCamera" src="">
+  </div>
+
+  <div class="camera-actions">
+    <button onclick="startCamera()">Start Camera</button>
+    <button onclick="captureFace()">Capture Face</button>
+    <button onclick="finishTraining()">Finish Training</button>
+    <button onclick="cancelTraining()">Cancel Training</button>
+  </div>
+  <p id="spaceHint"
+   style="
+     display:none;
+     text-align:center;
+     color:#38bdf8;
+     font-size:0.85rem;
+     letter-spacing:0.12em;
+     margin-bottom:6px;
+   ">
+  PRESS <b>SPACE BAR</b> TO CAPTURE
+</p>
+
+<p id="cameraInfo"></p>
+  
+</div>
+<button id="continueBtn" style="display:none" onclick="goToDetails()">Continue</button>
+<!-- CARD 3 -->
+<div class="card" id="detailsSection" style="display:none">
+  <h2>STUDENT DETAILS</h2>
+  <input id="detail-id" readonly placeholder="ID">
+  <input id="detail-name" placeholder="Name">
+  <input id="detail-class" placeholder="Class">
+  <input id="detail-image" type="file">
+  <button onclick="saveStudentDetails()">Save Details</button>
+</div>
+
+<script>
+/* ================= HELPER ================= */
+function hasValidStudent() {
+  const nameInput = document.getElementById("student-name");
+  const idInput = document.getElementById("student-id");
+
+  const name = nameInput.value.trim();
+  const id = idInput.value.trim();
+
+  // ❌ NAME EMPTY
+  if (name.length === 0) {
+    alert("Student Name is required.");
+    nameInput.focus();
+    return false;
+  }
+
+  // ❌ NAME: ONLY CAPITAL LETTERS + SPACES
+  if (!/^[A-Z ]+$/.test(name)) {
+    alert("Student Name must contain ONLY CAPITAL letters (A–Z) and spaces.");
+    nameInput.focus();
+    return false;
+  }
+
+  // ❌ ID EMPTY
+  if (id.length === 0) {
+    alert("Student ID is required.");
+    idInput.focus();
+    return false;
+  }
+
+  // ❌ ID: ONLY NUMBERS, MINIMUM 3 DIGITS
+  if (!/^[0-9]{3,}$/.test(id)) {
+    alert("Student ID must be NUMBERS only and at least 3 digits.");
+    idInput.focus();
+    return false;
+  }
+
+  // ✅ ALL CONDITIONS PASSED
+  return true;
+}
+
+
+/* ================= START TRAINING ================= */
+function startTraining() {
+  if (!hasValidStudent()) return;
+
+  fetch("/api/train", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: document.getElementById("student-name").value,
+      id: document.getElementById("student-id").value
+    })
+  })
+  .then(async res => {
+    let data = {};
+
+    // ✅ SAFELY PARSE JSON (if any)
+    try {
+      data = await res.json();
+    } catch (e) {
+      data = {};
+    }
+
+    // ❌ REAL backend rejection
+    if (!res.ok) {
+      alert(data.error || "Training rejected");
+      return;
+    }
+
+    // ✅ SUCCESS → NO ALERT
+    const cameraSection = document.getElementById("cameraSection");
+
+    cameraSection.classList.add("show");
+
+    setTimeout(() => {
+      cameraSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 120);
+  })
+  .catch(err => {
+    // ❌ ONLY TRUE NETWORK ERRORS
+    console.error("Network error:", err);
+  });
+}
+
+/* ================= START CAMERA ================= */
+function startCamera() {
+  if (!hasValidStudent()) return;
+
+  fetch("/train/start", { method: "POST" })
+    .then(() => {
+      document.getElementById("trainCamera").src =
+        "/train/video_feed?" + Date.now();
+        document.getElementById("trainCamera").style.display = "block";
+document.getElementById("cameraPlaceholder").style.display = "none";
+
+    });
+}
+
+/* ================= CAPTURE FACE ================= */
+function captureFace() {
+  fetch("/train/capture", { method: "POST" })
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) {
+        alert(d.error);
+        return;
+      }
+
+      document.getElementById("cameraInfo").innerText =
+  `Captured: ${d.count} / 50`;
+
+      // 🔒 AUTO-BLOCK AFTER 50
+      if (d.count >= 50) {
+        document.getElementById("info").innerText +=
+          " — Limit reached. Finish training.";
+      }
+    });
+}
+
+/* ================= FINISH TRAINING ================= */
+function finishTraining() {
+  fetch("/train/finish", { method: "POST" })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+
+      alert("Training completed successfully!");
+
+      // 🔒 hide camera
+      document.getElementById("trainCamera").src = "";
+      document.getElementById("trainCamera").style.display = "none";
+      document.getElementById("cameraPlaceholder").style.display = "flex";
+
+
+      // ✅ store trained ID
+      window.lastTrainedId = data.trained_id;
+
+      // ✅ show Continue button
+      document.getElementById("continueBtn").style.display = "inline-block";
+    });
+}
+
+/* ================= CONTINUE TO STDFORM ================= */
+function goToDetails() {
+  // Show details section
+  document.getElementById("detailsSection").style.display = "block";
+
+  // ✅ TAKE ID FROM TRAINING INPUT
+  const trainingId = document.getElementById("student-id").value.trim();
+
+  if (!trainingId) {
+    alert("Training ID is missing.");
+    return;
+  }
+
+  // Auto-fill details form
+  document.getElementById("detail-id").value = trainingId;
+  document.getElementById("detail-name").value =
+    document.getElementById("student-name").value.trim();
+}
+
+/* ================= CANCEL TRAINING ================= */
+function cancelTraining() {
+  const ok = confirm(
+    "Cancel training?\n\nAll captured faces and data will be deleted."
+  );
+  if (!ok) return;
+
+  fetch("/train/stop", { method: "POST" })
+    .then(() => {
+      // 🔄 FULL RESET TO FRESH PAGE
+      window.location.reload();
+    });
+}
+
+/* ================= SPACE KEY → CAPTURE ================= */
+document.addEventListener("keydown", function (e) {
+
+  // 🔹 If user is typing in an input or textarea → DO NOTHING
+  if (
+    document.activeElement &&
+    (document.activeElement.tagName === "INPUT" ||
+     document.activeElement.tagName === "TEXTAREA")
+  ) {
+    return; // ✅ allow normal typing (SPACE included)
+  }
+
+  // 🔹 SPACE key outside input → Capture face
+  if (e.code === "Space") {
+    e.preventDefault(); // prevent page scroll
+
+    const cameraSection =
+      document.getElementById("cameraSection");
+
+    /* ================= SPACE KEY → CAPTURE FACE ================= */
+document.addEventListener("keydown", function (e) {
+
+  // 1️⃣ Allow normal typing in inputs
+  const active = document.activeElement;
+  if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) {
+    return;
+  }
+
+  // 2️⃣ SPACE key only
+  if (e.code !== "Space") return;
+
+  e.preventDefault(); // stop page scroll
+
+  const cameraSection = document.getElementById("cameraSection");
+
+  // 3️⃣ Only if camera section is visible (unlocked)
+  if (!cameraSection.classList.contains("show")) return;
+
+  // 4️⃣ Capture face
+  captureFace();
+});
+
+  }
+});
+function saveStudentDetails() {
+  const formData = new FormData();
+
+  formData.append("id", document.getElementById("detail-id").value);
+  formData.append("name", document.getElementById("detail-name").value);
+  formData.append("class", document.getElementById("detail-class").value);
+  formData.append("image", document.getElementById("detail-image").files[0]);
+
+  fetch("/student/save_details", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    alert("Student details saved successfully!");
+
+    // 🔽 ADD THIS
+    window.location.href = "/train";
+  });
+}
+
+</script>
+
+</body>
+</html>

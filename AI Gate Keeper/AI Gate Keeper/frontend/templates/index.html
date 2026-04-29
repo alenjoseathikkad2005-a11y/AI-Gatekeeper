@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Gatekeeper – Entry Monitor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    :root {
+      --bg: #0f173a;
+      --card-bg: #111828;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.1);
+      --danger: #ef4444;
+      --border: #1f2937;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --button: #1e293b;
+      --button-hover: #111827;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.7);
+      --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, #193d1f, #020617);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1200px;
+      background: linear-gradient(145deg, #020617 0%, #020617 45%, #020617 100%);
+      border-radius: 28px;
+      padding: 20px 26px 20px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* NAVBAR */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #020617;
+      border-radius: 999px;
+      padding: 8px 18px;
+      border: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-logo-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
+    }
+
+    .nav-links {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.9rem;
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--text-muted);
+      padding: 6px 10px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-link:hover {
+      background: var(--button);
+      color: var(--text-main);
+    }
+
+    .nav-link.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(34, 197, 94, 0.6);
+    }
+
+    /* Dropdown */
+    .dropdown-menu {
+      position: absolute;
+      top: 120%;
+      left: 0;
+      min-width: 180px;
+      background: #020617;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
+      padding: 6px 0;
+      display: none;
+      z-index: 10;
+    }
+
+    .dropdown-menu a {
+      display: block;
+      padding: 7px 14px;
+      font-size: 0.86rem;
+      text-decoration: none;
+      color: var(--text-muted);
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .dropdown-menu a:hover {
+      background: var(--button);
+      color: var(--text-main);
+    }
+
+    .nav-item.dropdown .dropdown-menu {
+  display: none;
+}
+
+.nav-item.dropdown.open .dropdown-menu {
+  display: block;
+}
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .title-block h1 {
+      font-size: 1.35rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .title-block p {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .status-pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
+    }
+
+    /* Main layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 18px;
+    }
+
+    /* Camera panel */
+    .panel {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .camera-frame {
+      margin-top: 4px;
+      background: radial-gradient(circle at 10% 0%, #1e293b 0, #020617 40%);
+      border-radius: calc(var(--radius-lg) - 6px);
+      border: 1px solid #1f2937;
+      height: 390px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .camera-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 80px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .camera-reticle {
+      width: 64%;
+      height: 64%;
+      border-radius: 24px;
+      border: 2px solid rgba(148, 163, 184, 0.75);
+      position: relative;
+    }
+
+    .camera-reticle::before,
+    .camera-reticle::after {
+      content: "";
+      position: absolute;
+      border-radius: 18px;
+      border: 2px solid rgba(34, 197, 94, 0.55);
+      inset: 12%;
+    }
+
+    .camera-label {
+      margin-top: 10px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+    }
+	.student-top {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.student-photo-box {
+  width: 160px;
+  height: 160px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0f172a, #020617);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#student-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  display: none;
+}
+
+.student-details {
+  flex: 1;
+}
+
+.student-details .info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 15px;
+}
+
+.student-details .info-row span:first-child {
+  color: #9ca3af;
+}
+
+.student-details .info-row span:last-child {
+  color: #f9fafb;
+  font-weight: 500;
+}
+
+
+    /* Right panel: student + statuses */
+    .recognized-photo {
+  width: 50%;
+  height: 190px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #0b1220, #020617);
+  border: 1px solid #1f2937;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.recognized-photo img {
+  width: 50%;
+  height: 50%;
+  object-fit: cover;
+  display: none;
+}
+
+    .details-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+    }
+
+    .card-header {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #FF2700;
+      margin-bottom: 6px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      margin: 4px 0;
+    }
+
+    .info-label {
+      color: var(--text-muted);
+    }
+
+    .info-value {
+      font-weight: 500;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 4px 0;
+      font-size: 0.9rem;
+    }
+
+    .status-label {
+      color: var(--text-muted);
+    }
+
+    .status-pill-small {
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-pill-small.ok {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(34, 197, 94, 0.6);
+    }
+
+    .status-pill-small.bad {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.6);
+    }
+
+    .status-icon {
+      font-size: 0.9rem;
+    }
+
+    /* Final decision */
+    .decision-card {
+      background: linear-gradient(
+        135deg,
+        rgba(34, 197, 94, 0.12),
+        rgba(22, 163, 74, 0.18)
+      );
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(34, 197, 94, 0.55);
+      padding: 12px 14px;
+    }
+
+    .decision-label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: rgba(74, 222, 128, 0.9);
+      margin-bottom: 5px;
+    }
+
+    .decision-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .decision-main-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: #022c22;
+      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.25);
+    }
+
+    .decision-main-text {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .decision-subtext {
+      margin-top: 2px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Footer buttons */
+    .footer {
+      margin-top: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--button);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.12s ease,
+        box-shadow 0.12s ease;
+    }
+
+    .btn:hover {
+      background: var(--button-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.55);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #022c22;
+      border-color: rgba(34, 197, 94, 0.8);
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: #16a34a;
+    }
+
+    .btn-danger {
+      border-color: rgba(239, 68, 68, 0.7);
+      color: #fecaca;
+    }
+
+    .hint-text {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .camera-loading {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 10, 25, 0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+}
+
+    .camera-loading.hidden {
+      display: none;
+}
+
+.loader-box {
+  text-align: center;
+  color: #e5e7eb;
+  font-size: 18px;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid rgba(34, 197, 94, 0.2);
+  border-top: 6px solid #22c55e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+    /* Responsive */
+    @media (max-width: 880px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .camera-frame {
+        height: 260px;
+      }
+
+      .nav-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .app-shell {
+        padding: 18px 14px 14px;
+        border-radius: 18px;
+      }
+
+      .title-block h1 {
+        font-size: 1.05rem;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  /* ================= CAMERA & UI ================= */
+  const faceVerify = document.getElementById("face-verification");
+  const faceVerifyText = document.getElementById("face-verification-text");
+  const faceVerifyIcon = document.getElementById("face-verification-icon");
+  const uniformText = document.getElementById("uniform-status-text");
+  const uniformIcon = document.getElementById("uniform-status-icon");
+  const idCardText = document.getElementById("idcard-status-text");
+  const idCardIcon = document.getElementById("idcard-status-icon");
+
+  const img = document.getElementById("cameraFeed");
+  const loader = document.getElementById("camera-loading");
+
+  const nameEl = document.getElementById("student-name");
+  const idEl = document.getElementById("student-id");
+  const classEl = document.getElementById("student-class");
+  const statusEl = document.getElementById("student-status");
+
+  const decisionText = document.getElementById("final-decision-text");
+  const decisionSub = document.getElementById("final-decision-subtext");
+  const decisionIcon = document.getElementById("decision-icon");
+  const decisionCard = document.getElementById("final-decision-card");
+
+  let pollingInterval = null;
+
+  /* ================= RESET UI ================= */
+  function resetStudentUI() {
+    nameEl.innerText = "--";
+    idEl.innerText = "--";
+    classEl.innerText = "--";
+    statusEl.innerText = "Waiting";
+    statusEl.style.color = "#eab308";
+
+    decisionText.innerText = "WAITING";
+    decisionSub.innerText = "Waiting for verification.";
+    decisionIcon.innerText = "...";
+    decisionCard.style.borderColor = "#eab308";
+
+    faceVerifyText.innerText = "Waiting";
+    faceVerifyIcon.innerText = "...";
+
+    if (uniformText && uniformIcon) {
+      uniformText.innerText = "Waiting";
+      uniformIcon.innerText = "...";
+    }
+
+    if (idCardText && idCardIcon) {
+      idCardText.innerText = "Waiting";
+      idCardIcon.innerText = "...";
+    }
+
+    const photoEl = document.getElementById("student-photo");
+    photoEl.style.display = "none";
+    photoEl.src = "";
+  }
+
+  resetStudentUI();
+
+  /* ================= START CAMERA ================= */
+  document.getElementById("startCamera").onclick = async () => {
+    loader.classList.remove("hidden");
+    resetStudentUI();
+
+    await fetch("/start-camera", { method: "POST" });
+
+    img.src = "/video_feed?" + Date.now();
+    img.style.display = "block";
+
+    setTimeout(() => {
+      loader.classList.add("hidden");
+    }, 1200);
+
+    if (!pollingInterval) {
+      pollingInterval = setInterval(fetchStudentInfo, 250);
+    }
+  };
+
+  /* ================= STOP CAMERA ================= */
+  document.getElementById("stopCamera").onclick = async () => {
+    await fetch("/stop-camera", { method: "POST" });
+
+    img.src = "";
+    img.style.display = "none";
+    loader.classList.add("hidden");
+
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
+    }
+
+    resetStudentUI();
+  };
+
+  /* ================= FETCH STUDENT DATA ================= */
+  function fetchStudentInfo() {
+    fetch("/current_student")
+      .then(res => res.json())
+      .then(data => {
+
+        if (!data || data.name === "--") {
+          resetStudentUI();
+          return;
+        }
+
+        nameEl.innerText = data.name;
+        idEl.innerText = data.id;
+        classEl.innerText = data.class;
+        statusEl.innerText = data.status;
+
+        if (String(data.id || "--") !== "--") {
+          faceVerifyText.innerText = "Recognized";
+        } else {
+          faceVerifyText.innerText = "Waiting";
+          
+        }
+
+        if (uniformText && uniformIcon) {
+          if (data.uniform_ok === true) {
+            uniformText.innerText = "Detected";
+            
+          } else if (data.uniform_ok === false) {
+            uniformText.innerText = "Missing";
+
+          } else {
+            uniformText.innerText = "Waiting";
+            
+          }
+        }
+
+        if (idCardText && idCardIcon) {
+          if (data.id_card_ok === true) {
+            idCardText.innerText = "Detected";
+            
+          } else if (data.id_card_ok === false) {
+            idCardText.innerText = "Missing";
+            
+          } else {
+            idCardText.innerText = "Waiting";
+            
+          }
+        }
+
+        if (data.final_decision === "ENTRY ALLOWED") {
+          decisionText.innerText = "ENTRY ALLOWED";
+          decisionSub.innerText = "Attendance marked instantly.";
+          decisionIcon.innerText = "OK";
+          decisionCard.style.borderColor = "#22c55e";
+          statusEl.style.color = "#22c55e";
+        } else if (data.final_decision === "ENTRY DENIED") {
+          decisionText.innerText = "ENTRY DENIED";
+          decisionSub.innerText = "Attendance logged. Fine pending admin approval.";
+          decisionIcon.innerText = "NO";
+          decisionCard.style.borderColor = "#ef4444";
+          statusEl.style.color = "#ef4444";
+        } else {
+          decisionText.innerText = "WAITING";
+          decisionSub.innerText = "Waiting for verification.";
+          decisionIcon.innerText = "...";
+          decisionCard.style.borderColor = "#eab308";
+          statusEl.style.color = "#eab308";
+        }
+
+        const photoEl = document.getElementById("student-photo");
+        if (data.image) {
+          photoEl.src = data.image + "?t=" + Date.now();
+          photoEl.style.display = "block";
+        }
+      })
+      .catch(console.error);
+  }
+
+  /* ================= VIEW DROPDOWN (FIXED) ================= */
+
+  const viewItem = document.querySelector(".nav-item.dropdown");
+  const viewLink = viewItem?.querySelector(".nav-link");
+
+  if (viewItem && viewLink) {
+
+    // Toggle dropdown on click
+    viewLink.addEventListener("click", (e) => {
+      e.preventDefault();       // stop #
+      e.stopPropagation();      // 🔑 CRITICAL FIX
+      viewItem.classList.toggle("open");
+    });
+
+    // Close when clicking outside
+    document.addEventListener("click", () => {
+      viewItem.classList.remove("open");
+    });
+  }
+
+});
+</script>
+
+  <div class="app-shell">
+    <!-- NAVBAR -->
+    <nav class="nav-bar">
+      <div class="nav-logo">
+        <span class="nav-logo-dot"></span>
+        <span>AI GATEKEEPER</span>
+      </div>
+
+      <ul class="nav-links">
+         <!-- HOME -->
+  <li class="nav-item">
+    <a href="{{ url_for('home') }}"
+       class="nav-link {{ 'active' if request.path == '/' else '' }}">
+      Home
+    </a>
+  </li>
+      <!-- TRAIN STUDENTS -->
+  <li class="nav-item">
+    <a href="{{ url_for('train_students') }}"
+       class="nav-link {{ 'active' if request.path == '/train' else '' }}">
+      Train Students
+    </a>
+  </li>
+
+  <!-- VIEW (DROPDOWN) -->
+  <li class="nav-item dropdown">
+  <a href="#" class="nav-link">view ▾</a>
+  <div class="dropdown-menu">
+    <a href="{{ url_for('students_list') }}">Student Details</a>
+    <a href="{{ url_for('attendance_students') }}">Attendance of Students</a>
+  </div>
+</li>
+
+ 
+  <!-- ADMIN PANEL -->
+  <li class="nav-item">
+    <a href="{{ url_for('admin_panel') }}"
+       class="nav-link {{ 'active' if request.path == '/admin' else '' }}">
+      Admin Panel
+    </a>
+  </li>
+
+     <!-- NOTIFICATION -->
+  <li class="nav-item">
+    <a href="{{ url_for('notification') }}"
+       class="nav-link {{ 'active' if request.path == '/notification' else '' }}">
+      Notification
+    </a>
+  </li>
+
+    <!-- SUPPORT -->
+  <li class="nav-item">
+    <a href="{{ url_for('support') }}"
+       class="nav-link {{ 'active' if request.path == '/support' else '' }}">
+      Support
+    </a>
+  </li>
+
+        <a href="{{ url_for('logout') }}" style="color:#ef4444;">Logout</a>
+
+      </ul>
+    </nav>
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="title-block">
+        <h1>AI GATEKEEPER – ENTRY MONITOR</h1>
+        <p>Face recognition · ID card verification · Full uniform detection</p>
+      </div>
+
+      
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-grid">
+      <!-- LEFT: CAMERA -->
+      <section class="panel">
+        <div class="panel-header">  
+          <span>Live camera feed</span>
+           <span style="font-size: 0.78rem; color: var(--text-muted);">
+            Gate 01 · Main Entrance
+          </span>
+        
+        </div>
+        <!-- Camera Loading Overlay -->
+        <div id="camera-loading" class="camera-loading hidden">
+          <div class="loader-box">
+            <div class="spinner"></div>
+            <p>Please wait… Camera is starting</p>
+          </div>
+        </div>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        Camera ready · Waiting for student
+      </div>  
+
+        <div class="camera-frame">
+          <!-- This is only a visual placeholder.
+               In real use, the video element from JS would go here. -->
+          <img id="cameraFeed" style="width:100%; border-radius:12px;"
+
+
+            src=""
+            style="
+              width: 100%;
+             height: 100%;
+             object-fit: cover;
+             border-radius: 16px;
+             display: none; ">
+      </section>
+
+      <!-- RIGHT: DETAILS + STATUSES -->
+      <div class="recognized-card">
+
+  <div class="student-top">
+    
+    <!-- LEFT: PHOTO -->
+    <div class="student-photo-box">
+      <img id="student-photo" />
+    </div>
+
+    <!-- RIGHT: DETAILS -->
+    <div class="student-details">
+      <div class="info-row">
+        <span>Name</span>
+        <span id="student-name">--</span>
+      </div>
+
+      <div class="info-row">
+        <span>ID</span>
+        <span id="student-id">--</span>
+      </div>
+
+      <div class="info-row">
+        <span>Class</span>
+        <span id="student-class">--</span>
+      </div>
+
+      <div class="info-row">
+        <span>Status</span>
+        <span id="student-status">Waiting</span>
+      </div>
+    </div>
+
+  </div><br>
+  <!-- Statuses -->
+  <div class="card">
+  <div class="card-header">Verification status</div>
+
+  <!-- FACE RECOGNITION -->
+  <div class="status-row">
+    <span class="status-label">Face recognition check</span>
+    <span id="face-verification">
+      <span id="face-verification-text">Waiting</span>
+      <span class="status-icon" id="face-verification-icon">⏳</span>
+    </span>
+  </div>
+
+  <!-- FULL UNIFORM -->
+  <div class="status-row">
+    <span class="status-label">Full uniform check</span>
+    <span id="uniform-status">
+      <span id="uniform-status-text">Waiting</span>
+      <span class="status-icon" id="uniform-status-icon">⏳</span>
+    </span>
+  </div>
+
+  <div class="status-row">
+    <span class="status-label">ID card check</span>
+    <span id="idcard-status">
+      <span id="idcard-status-text">Waiting</span>
+      <span class="status-icon" id="idcard-status-icon">...</span>
+    </span>
+  </div>
+
+</div>
+
+
+
+		<!-- Final decision -->
+        <div class="decision-card" id="final-decision-card">
+  <div class="decision-label">Final decision</div>
+
+  <div class="decision-main">
+    <div class="decision-main-icon" id="decision-icon">⏳</div>
+    <div>
+      <div class="decision-main-text" id="final-decision-text">
+        WAITING
+      </div>
+      <div class="decision-subtext" id="final-decision-subtext">
+        Waiting for verification.
+      </div>
+    </div>
+  </div>
+</div>
+      </section>
+    </main>
+
+    <!-- FOOTER BUTTONS -->
+    <footer class="footer">
+      <div class="button-row">
+        <button class="btn btn-primary" id="startCamera">▶ Start Camera</button>
+        <button class="btn" id="stopCamera">⏸ Stop Camera</button>
+
+      </div>
+
+      <p class="hint-text">
+       this is the USER INTERFACE of AI gatekeeper monitoring
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
+
